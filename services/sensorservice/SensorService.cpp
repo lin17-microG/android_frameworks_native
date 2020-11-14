@@ -1643,10 +1643,9 @@ status_t SensorService::flushSensor(const sp<SensorEventConnection>& connection,
 
 bool SensorService::canAccessSensor(const Sensor& sensor, const char* operation,
         const String16& opPackageName) {
+
     // Check if a permission is required for this sensor
-    if (sensor.getRequiredPermission().length() <= 0) {
-        return true;
-    }
+    bool noAssociatedPermission = (sensor.getRequiredPermission().length() <= 0);
 
     const int32_t opCode = sensor.getRequiredAppOp();
     const int32_t appOpMode = sAppOpsManager.checkOp(opCode,
@@ -1654,7 +1653,9 @@ bool SensorService::canAccessSensor(const Sensor& sensor, const char* operation,
     bool appOpAllowed = appOpMode == AppOpsManager::MODE_ALLOWED;
 
     bool canAccess = false;
-    if (hasPermissionForSensor(sensor)) {
+    if (noAssociatedPermission) {
+        canAccess = appOpAllowed;
+    } else if (hasPermissionForSensor(sensor)) {
         // Ensure that the AppOp is allowed, or that there is no necessary app op for the sensor
         if (opCode < 0 || appOpAllowed) {
             canAccess = true;
